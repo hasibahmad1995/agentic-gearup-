@@ -209,10 +209,15 @@ function VerseCard({ verse, dark, index }) {
         <div
           className="w-full rounded-xl px-4 py-3"
           style={{
-            background: dark ? "rgba(6,25,16,0.55)" : "rgba(220,252,231,0.55)",
-            border: dark ? "1px solid rgba(52,211,153,0.12)" : "1px solid rgba(6,95,70,0.1)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
+            background: dark
+              ? "linear-gradient(135deg, rgba(6,78,59,0.45) 0%, rgba(4,120,87,0.25) 100%)"
+              : "linear-gradient(135deg, rgba(187,247,208,0.75) 0%, rgba(209,250,229,0.5) 100%)",
+            border: dark
+              ? "1px solid rgba(52,211,153,0.22)"
+              : "1px solid rgba(134,239,172,0.6)",
+            boxShadow: dark
+              ? "inset 0 1px 0 rgba(52,211,153,0.12), inset 0 -1px 0 rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.2)"
+              : "inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 0 rgba(6,95,70,0.06), 0 2px 8px rgba(6,95,70,0.07)",
           }}
         >
           <p
