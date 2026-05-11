@@ -207,17 +207,13 @@ function VerseCard({ verse, dark, index }) {
 
         {/* Translation */}
         <div
-          className="w-full rounded-xl px-4 py-3"
+          className="w-full rounded-2xl px-4 py-3"
           style={{
-            background: dark
-              ? "linear-gradient(135deg, rgba(6,78,59,0.45) 0%, rgba(4,120,87,0.25) 100%)"
-              : "linear-gradient(135deg, rgba(187,247,208,0.75) 0%, rgba(209,250,229,0.5) 100%)",
-            border: dark
-              ? "1px solid rgba(52,211,153,0.22)"
-              : "1px solid rgba(134,239,172,0.6)",
-            boxShadow: dark
-              ? "inset 0 1px 0 rgba(52,211,153,0.12), inset 0 -1px 0 rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.2)"
-              : "inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 0 rgba(6,95,70,0.06), 0 2px 8px rgba(6,95,70,0.07)",
+            background: "rgba(35, 119, 29, 0.23)",
+            boxShadow: "0 4px 30px rgba(0, 0, 0, 0.1)",
+            backdropFilter: "blur(11px)",
+            WebkitBackdropFilter: "blur(11px)",
+            border: "1px solid rgba(35, 119, 29, 0.1)",
           }}
         >
           <p
@@ -225,7 +221,7 @@ function VerseCard({ verse, dark, index }) {
             style={{
               fontFamily: '"Lora", Georgia, serif',
               fontStyle: "italic",
-              color: dark ? "#a7f3d0" : "#14532d",
+              color: dark ? "#bbf7d0" : "#14532d",
             }}
           >
             {translation}
