@@ -15,6 +15,15 @@ function stripHtml(html = "") {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function cleanTranslation(text = "") {
+  return stripHtml(text)
+    .replace(/\s+\d+\s+/g, " ")  // inline footnote numbers: "Lord 1 of" → "Lord of"
+    .replace(/\s+\d+$/g, "")     // trailing footnote numbers: "Merciful. 1" → "Merciful."
+    .replace(/\s+-\s*$/g, "")    // trailing dash: "worlds -" → "worlds"
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 async function fetchAllVerses(chapterId) {
   const perPage = 50;
   const url = (page) =>
@@ -139,7 +148,7 @@ function ChapterCard({ chapter, dark, index, onClick }) {
 function VerseCard({ verse, dark, index }) {
   const [tafsirOpen, setTafsirOpen] = useState(false);
 
-  const translation = stripHtml(verse.translations?.[0]?.text ?? "");
+  const translation = cleanTranslation(verse.translations?.[0]?.text ?? "");
   const tafsirText  = verse.tafsirData?.text ?? "";
   const scholarName = verse.tafsirData?.resource_name ?? "Ibn Kathir";
 
