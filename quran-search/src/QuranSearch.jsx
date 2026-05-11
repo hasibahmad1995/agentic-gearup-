@@ -335,12 +335,105 @@ function SkeletonChapterCard({ dark }) {
   );
 }
 
+// ─── Sign-In Modal ────────────────────────────────────────────────────────────
+
+function SignInModal({ dark, onClose, onGoogleSignIn }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-2xl overflow-hidden"
+        style={{
+          background: dark ? "rgba(12,22,18,0.98)" : "#ffffff",
+          border: dark ? "1px solid rgba(52,211,153,0.15)" : "1px solid rgba(6,95,70,0.1)",
+          boxShadow: dark ? "0 24px 64px rgba(0,0,0,0.7)" : "0 24px 64px rgba(6,95,70,0.15)",
+          animation: "cardRise 0.25s ease both",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal header */}
+        <div
+          className="px-8 pt-8 pb-6 flex flex-col items-center text-center border-b"
+          style={{ borderColor: dark ? "rgba(55,65,81,0.35)" : "rgba(6,95,70,0.07)" }}
+        >
+          {/* Logo mark */}
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center mb-5"
+            style={{ background: "linear-gradient(135deg, #065f46, #047857)", boxShadow: "0 4px 16px rgba(6,95,70,0.35)" }}
+          >
+            <span style={{ fontFamily: "'Scheherazade New', serif", fontSize: "14px", color: "#fde68a" }}>
+              ﷽
+            </span>
+          </div>
+
+          <h2
+            className="font-semibold mb-1"
+            style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "1.5rem",
+              letterSpacing: "-0.02em",
+              color: dark ? "#f1f5f9" : "#064e3b",
+            }}
+          >
+            Welcome back
+          </h2>
+          <p
+            className="text-sm leading-relaxed"
+            style={{ fontFamily: "'Lora', serif", color: dark ? "#64748b" : "#78716c" }}
+          >
+            Sign in to continue exploring the Quran
+          </p>
+        </div>
+
+        {/* Sign-in options */}
+        <div className="px-8 py-6 flex flex-col gap-3">
+          <button
+            onClick={onGoogleSignIn}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 hover:shadow-md active:scale-[0.98]"
+            style={{
+              background: dark ? "rgba(255,255,255,0.06)" : "#ffffff",
+              color: dark ? "#f1f5f9" : "#3c4043",
+              border: dark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #dadce0",
+              boxShadow: dark ? "none" : "0 1px 3px rgba(0,0,0,0.08)",
+            }}
+          >
+            {/* Official Google "G" logo */}
+            <svg width="18" height="18" viewBox="0 0 48 48" className="flex-shrink-0">
+              <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.1-4z"/>
+              <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4c-7.8 0-14.6 4.5-17.7 10.7z"/>
+              <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.5 35.6 26.9 36.5 24 36.5c-5.3 0-9.7-2.9-11.3-7l-6.6 5.1C9.5 39.6 16.3 44 24 44z"/>
+              <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.5-2.6 4.6-4.8 6l6.2 5.2C40.5 35.5 44 30.2 44 24c0-1.3-.1-2.7-.4-4z"/>
+            </svg>
+            Continue with Google
+          </button>
+
+          <p
+            className="text-center text-[11px] leading-relaxed pt-1"
+            style={{ color: dark ? "#374151" : "#9ca3af" }}
+          >
+            By continuing, you agree to our terms of use.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Root App ─────────────────────────────────────────────────────────────────
 
 export default function QuranSearch() {
   const { user, signInWithGoogle, signOutUser } = useAuth();
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen]     = useState(false);
+  const [signInModalOpen, setSignInModalOpen] = useState(false);
   const userMenuRef = useRef(null);
+
+  const handleGoogleSignIn = async () => {
+    await signInWithGoogle();
+    setSignInModalOpen(false);
+  };
 
   const [dark, setDark] = useState(false);
   const [query, setQuery] = useState("");
@@ -546,21 +639,15 @@ export default function QuranSearch() {
                 </div>
               ) : (
                 <button
-                  onClick={signInWithGoogle}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+                  onClick={() => setSignInModalOpen(true)}
+                  className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
                   style={{
                     background: "linear-gradient(135deg, #065f46, #047857)",
                     color: "#ffffff",
-                    boxShadow: "0 2px 8px rgba(6,95,70,0.3)",
+                    boxShadow: "0 2px 8px rgba(6,95,70,0.25)",
                   }}
                 >
-                  <svg width="13" height="13" viewBox="0 0 48 48">
-                    <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.1-4z"/>
-                    <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4c-7.8 0-14.6 4.5-17.7 10.7z"/>
-                    <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.5 35.6 26.9 36.5 24 36.5c-5.3 0-9.7-2.9-11.3-7l-6.6 5.1C9.5 39.6 16.3 44 24 44z"/>
-                    <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.5-2.6 4.6-4.8 6l6.2 5.2C40.5 35.5 44 30.2 44 24c0-1.3-.1-2.7-.4-4z"/>
-                  </svg>
-                  <span className="hidden sm:inline">Sign in</span>
+                  Sign in
                 </button>
               )}
             </div>
@@ -731,6 +818,15 @@ export default function QuranSearch() {
           )}
         </div>
       </div>
+
+      {/* ── Sign-In Modal ── */}
+      {signInModalOpen && (
+        <SignInModal
+          dark={dark}
+          onClose={() => setSignInModalOpen(false)}
+          onGoogleSignIn={handleGoogleSignIn}
+        />
+      )}
     </>
   );
 }
