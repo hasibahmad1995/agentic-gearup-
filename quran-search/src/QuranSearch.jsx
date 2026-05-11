@@ -206,16 +206,26 @@ function VerseCard({ verse, dark, index }) {
         />
 
         {/* Translation */}
-        <p
-          className="w-full text-sm leading-relaxed break-words"
+        <div
+          className="w-full rounded-xl px-4 py-3"
           style={{
-            fontFamily: '"Lora", Georgia, serif',
-            fontStyle: "italic",
-            color: dark ? "#cbd5e1" : "#44403c",
+            background: dark ? "rgba(6,25,16,0.55)" : "rgba(220,252,231,0.55)",
+            border: dark ? "1px solid rgba(52,211,153,0.12)" : "1px solid rgba(6,95,70,0.1)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
           }}
         >
-          "{translation}"
-        </p>
+          <p
+            className="w-full text-sm leading-relaxed break-words"
+            style={{
+              fontFamily: '"Lora", Georgia, serif',
+              fontStyle: "italic",
+              color: dark ? "#a7f3d0" : "#14532d",
+            }}
+          >
+            {translation}
+          </p>
+        </div>
 
         {/* Tafsir toggle */}
         {tafsirText && (
