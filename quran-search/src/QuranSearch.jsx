@@ -544,6 +544,7 @@ export default function QuranSearch() {
         @import url('https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
         *, *::before, *::after { box-sizing: border-box; }
+        button { cursor: pointer; }
 
         @keyframes cardRise {
           from { opacity: 0; transform: translateY(16px); }
