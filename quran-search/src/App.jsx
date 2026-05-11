@@ -1,5 +1,10 @@
+import { AuthProvider } from './AuthContext'
 import QuranSearch from './QuranSearch'
 
 export default function App() {
-  return <QuranSearch />
+  return (
+    <AuthProvider>
+      <QuranSearch />
+    </AuthProvider>
+  )
 }

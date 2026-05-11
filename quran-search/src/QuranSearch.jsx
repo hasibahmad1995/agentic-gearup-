@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Search, Moon, Sun, BookOpen, Sparkles,
-  Loader2, ChevronDown, ScrollText, ArrowLeft
+  Loader2, ChevronDown, ScrollText, ArrowLeft, LogOut
 } from "lucide-react";
+import { useAuth } from "./AuthContext";
 
 // ─── API Config ───────────────────────────────────────────────────────────────
 
@@ -337,8 +338,22 @@ function SkeletonChapterCard({ dark }) {
 // ─── Root App ─────────────────────────────────────────────────────────────────
 
 export default function QuranSearch() {
+  const { user, signInWithGoogle, signOutUser } = useAuth();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
+
   const [dark, setDark] = useState(false);
   const [query, setQuery] = useState("");
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target))
+        setUserMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const [chapters, setChapters]               = useState([]);
   const [chaptersLoading, setChaptersLoading] = useState(true);
@@ -450,20 +465,105 @@ export default function QuranSearch() {
                 Semantic AI
               </span>
             </div>
-            <button
-              onClick={() => setDark((d) => !d)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 flex-shrink-0"
-              style={{
-                background: dark ? "rgba(55,65,81,0.5)" : "rgba(236,253,245,0.9)",
-                color: dark ? "#fbbf24" : "#374151",
-                border: dark ? "1px solid rgba(75,85,99,0.4)" : "1px solid rgba(6,95,70,0.13)",
-              }}
-            >
-              {dark
-                ? <Sun size={13} />
-                : <Moon size={13} />}
-              <span className="hidden sm:inline">{dark ? "Light" : "Dark"}</span>
-            </button>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Dark mode toggle */}
+              <button
+                onClick={() => setDark((d) => !d)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200"
+                style={{
+                  background: dark ? "rgba(55,65,81,0.5)" : "rgba(236,253,245,0.9)",
+                  color: dark ? "#fbbf24" : "#374151",
+                  border: dark ? "1px solid rgba(75,85,99,0.4)" : "1px solid rgba(6,95,70,0.13)",
+                }}
+              >
+                {dark ? <Sun size={13} /> : <Moon size={13} />}
+                <span className="hidden sm:inline">{dark ? "Light" : "Dark"}</span>
+              </button>
+
+              {/* Auth */}
+              {user ? (
+                <div className="relative" ref={userMenuRef}>
+                  <button
+                    onClick={() => setUserMenuOpen((o) => !o)}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all duration-200"
+                    style={{
+                      background: dark ? "rgba(16,185,129,0.09)" : "rgba(6,95,70,0.06)",
+                      border: dark ? "1px solid rgba(16,185,129,0.18)" : "1px solid rgba(6,95,70,0.13)",
+                    }}
+                  >
+                    <img
+                      src={user.photoURL}
+                      alt={user.displayName}
+                      className="w-6 h-6 rounded-full"
+                      referrerPolicy="no-referrer"
+                    />
+                    <span
+                      className="hidden sm:inline text-xs font-medium max-w-[100px] truncate"
+                      style={{ color: dark ? "#6ee7b7" : "#065f46" }}
+                    >
+                      {user.displayName?.split(" ")[0]}
+                    </span>
+                    <ChevronDown
+                      size={11}
+                      style={{
+                        color: dark ? "#6ee7b7" : "#065f46",
+                        transform: userMenuOpen ? "rotate(180deg)" : "rotate(0deg)",
+                        transition: "transform 0.2s ease",
+                      }}
+                    />
+                  </button>
+
+                  {userMenuOpen && (
+                    <div
+                      className="absolute right-0 top-full mt-2 w-48 rounded-xl overflow-hidden z-50"
+                      style={{
+                        background: dark ? "rgba(15,25,20,0.97)" : "#ffffff",
+                        border: dark ? "1px solid rgba(52,211,153,0.15)" : "1px solid rgba(6,95,70,0.12)",
+                        boxShadow: dark ? "0 8px 32px rgba(0,0,0,0.5)" : "0 8px 32px rgba(6,95,70,0.12)",
+                      }}
+                    >
+                      <div
+                        className="px-4 py-3 border-b"
+                        style={{ borderColor: dark ? "rgba(55,65,81,0.4)" : "rgba(6,95,70,0.08)" }}
+                      >
+                        <p className="text-xs font-semibold truncate" style={{ color: dark ? "#f1f5f9" : "#1c1917" }}>
+                          {user.displayName}
+                        </p>
+                        <p className="text-[11px] truncate mt-0.5" style={{ color: dark ? "#64748b" : "#78716c" }}>
+                          {user.email}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => { signOutUser(); setUserMenuOpen(false); }}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-medium transition-colors duration-150 hover:bg-red-50"
+                        style={{ color: "#ef4444" }}
+                      >
+                        <LogOut size={12} />
+                        Sign out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={signInWithGoogle}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+                  style={{
+                    background: "linear-gradient(135deg, #065f46, #047857)",
+                    color: "#ffffff",
+                    boxShadow: "0 2px 8px rgba(6,95,70,0.3)",
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 48 48">
+                    <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.1-4z"/>
+                    <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4c-7.8 0-14.6 4.5-17.7 10.7z"/>
+                    <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.5 35.6 26.9 36.5 24 36.5c-5.3 0-9.7-2.9-11.3-7l-6.6 5.1C9.5 39.6 16.3 44 24 44z"/>
+                    <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.5-2.6 4.6-4.8 6l6.2 5.2C40.5 35.5 44 30.2 44 24c0-1.3-.1-2.7-.4-4z"/>
+                  </svg>
+                  <span className="hidden sm:inline">Sign in</span>
+                </button>
+              )}
+            </div>
           </div>
         </header>
 
