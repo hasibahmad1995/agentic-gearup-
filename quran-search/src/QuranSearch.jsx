@@ -584,7 +584,7 @@ export default function QuranSearch() {
           }}
         >
           <div className="w-full max-w-4xl px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 select-none min-w-0">
+            <button onClick={closeChapter} className="flex items-center gap-2 select-none min-w-0 bg-transparent border-0 p-0">
               <div
                 className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden"
                 style={{ background: "linear-gradient(135deg, #065f46, #047857)" }}
@@ -607,7 +607,7 @@ export default function QuranSearch() {
               >
                 Semantic AI
               </span>
-            </div>
+            </button>
             <div className="flex items-center gap-2 flex-shrink-0">
               {/* Dark mode toggle */}
               <button
