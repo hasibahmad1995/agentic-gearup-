@@ -1,0 +1,28 @@
+# Dependencies
+**/node_modules/
+**/dist/
+**/dist-ssr/
+
+# Local-only documentation (never pushed to GitHub)
+CONTEXT_LOG.md
+**/CONTEXT_LOG.md
+docs/
+**/docs/
+
+# Env and secrets
+.env
+.env.*
+**/*.local
+
+# Logs
+*.log
+**/*.log
+npm-debug.log*
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.sw?
