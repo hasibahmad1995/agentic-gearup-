@@ -1,47 +1,40 @@
 # Quran Search
 
-A semantic search interface for the Quran — built to find verses not by keyword, but by meaning, emotion, and human situation.
+Find Quran verses by meaning — not by keyword. Describe how you feel or what you are going through, and the right verse finds you.
+
+**Live →** https://hasibahmad1995.github.io/agentic-gearup-/
 
 ---
 
 ## The Problem
 
-The Quran has 6,236 verses. When someone is overwhelmed, grieving, losing hope, or searching for guidance on a specific situation in their life, they rarely know which surah or verse number to look for. Traditional search tools return results based on word matching — useful only if you already know what you are looking for.
+The Quran has 6,236 verses. When someone is overwhelmed, grieving, or searching for guidance, they rarely know which surah or verse to look for. Keyword search only works if you already know what you are looking for.
 
-Most people do not. They know how they feel.
-
----
-
-## The Objective
-
-Build a search experience where a person can describe:
-
-- A feeling — *"I feel crushed under pressure and can't see a way out"*
-- A situation — *"I am dealing with loss and don't know how to move forward"*
-- A question — *"How should I respond when someone wrongs me?"*
-
-...and receive the verses most relevant to that experience, ranked by semantic similarity — not keyword overlap.
-
-Each result includes:
-- The **Arabic text** in its original Uthmani script
-- An **English translation** (Dr. Mustafa Khattab — The Clear Quran)
-- An expandable **Tafsir** (scholarly commentary by Ibn Kathir) for deeper context
+Most people don't. They know how they feel.
 
 ---
 
-## Current State
+## What It Does
 
-The app currently works as a **chapter browser**:
+Describe a feeling, a situation, or a question in plain language:
 
-- All 114 chapters (surahs) are loaded from the [Quran.com API v4](https://api.quran.com/api/v4)
-- Selecting a chapter fetches all its verses with translation and tafsir
-- Dark and light mode supported
+> *"I feel crushed under pressure and can't see a way out"*  
+> *"I am dealing with loss and don't know how to move forward"*  
+> *"How should I respond when someone wrongs me?"*
 
-Semantic search is the next milestone. The plan:
+The app returns the most relevant verses ranked by meaning — not word matching. Each result shows the Arabic text, an English translation, and expandable scholarly commentary (tafsir).
 
-1. Pre-compute vector embeddings for every verse (translation + tafsir combined)
-2. Store in a vector database
-3. At query time, embed the user's input and return the closest verses by cosine similarity
+---
+
+## Status
+
+| Feature | State |
+|---|---|
+| Browse all 114 chapters | ✅ Live |
+| Verse + translation per chapter | ✅ Live |
+| Ibn Kathir tafsir per verse | ✅ Live |
+| Dark / light mode | ✅ Live |
+| Semantic search by meaning | 🔜 Next milestone |
 
 ---
 
@@ -49,23 +42,19 @@ Semantic search is the next milestone. The plan:
 
 | Layer | Technology |
 |---|---|
-| UI | React 19 + Vite |
+| UI | React 19 + Vite 8 |
 | Styling | Tailwind CSS v4 |
-| Icons | lucide-react |
-| Data | Quran.com public API v4 |
-| Fonts | Scheherazade New (Arabic) · Lora (body) · Cormorant Garamond (display) |
-| Search (planned) | Embeddings + vector similarity |
+| Data | Quran.com API v4 — no key required |
+| Fonts | Scheherazade New · Lora · Cormorant Garamond |
+| Search (planned) | Vector embeddings + cosine similarity |
 
 ---
 
-## Running Locally
+## Run Locally
 
 ```bash
-cd quran-search
+git clone https://github.com/hasibahmad1995/agentic-gearup-
+cd agentic-gearup-/quran-search
 npm install
 npm run dev
 ```
-
-Open **http://localhost:5173**
-
-No API key required — Quran.com's v4 API is publicly accessible.
