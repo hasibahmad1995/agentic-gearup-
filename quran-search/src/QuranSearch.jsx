@@ -691,10 +691,12 @@ export default function QuranSearch() {
                   onClick={() => setSignInModalOpen(true)}
                   className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer"
                   style={{
-                    background: "linear-gradient(135deg, #065f46 0%, #6ee7b7 100%)",
-                    color: "#ffffff",
-                    boxShadow: "0 2px 10px rgba(6,95,70,0.3)",
+                    background: dark ? "rgba(16,185,129,0.09)" : "rgba(6,95,70,0.07)",
+                    color: dark ? "#6ee7b7" : "#065f46",
+                    border: dark ? "1px solid rgba(16,185,129,0.18)" : "1px solid rgba(6,95,70,0.14)",
                   }}
+                  onMouseEnter={e => { e.currentTarget.style.background = dark ? "rgba(16,185,129,0.18)" : "rgba(6,95,70,0.13)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = dark ? "rgba(16,185,129,0.09)" : "rgba(6,95,70,0.07)"; }}
                 >
                   Sign in
                 </button>
