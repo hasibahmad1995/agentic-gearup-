@@ -8,7 +8,7 @@ import { useAuth } from "./AuthContext";
 // ─── API Config ───────────────────────────────────────────────────────────────
 
 const BASE           = "https://api.quran.com/api/v4";
-const TRANSLATION_ID = 131; // Dr. Mustafa Khattab – The Clear Quran
+const TRANSLATION_ID = 20;  // Saheeh International
 const TAFSIR_ID      = 169; // Tafsir Ibn Kathir (English)
 
 function stripHtml(html = "") {
@@ -139,7 +139,7 @@ function ChapterCard({ chapter, dark, index, onClick }) {
 function VerseCard({ verse, dark, index }) {
   const [tafsirOpen, setTafsirOpen] = useState(false);
 
-  const translation = verse.translations?.[0]?.text ?? "";
+  const translation = stripHtml(verse.translations?.[0]?.text ?? "");
   const tafsirText  = verse.tafsirData?.text ?? "";
   const scholarName = verse.tafsirData?.resource_name ?? "Ibn Kathir";
 
