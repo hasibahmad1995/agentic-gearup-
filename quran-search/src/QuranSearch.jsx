@@ -19,8 +19,9 @@ async function fetchAllVerses(chapterId) {
   const perPage = 50;
   const url = (page) =>
     `${BASE}/verses/by_chapter/${chapterId}` +
-    `?translations=${TRANSLATION_ID}&tafsirs=${TAFSIR_ID}` +
-    `&fields=text_uthmani&per_page=${perPage}&page=${page}`;
+    `?translations=${TRANSLATION_ID}` +
+    `&fields=text_uthmani` +
+    `&per_page=${perPage}&page=${page}`;
 
   const firstData = await fetch(url(1)).then((r) => r.json());
   const totalPages = firstData.pagination?.total_pages ?? 1;
@@ -38,6 +39,24 @@ async function fetchAllVerses(chapterId) {
   }
 
   return all;
+}
+
+async function fetchTafsirMap(chapterId) {
+  try {
+    const res = await fetch(`${BASE}/tafsirs/${TAFSIR_ID}/by_chapter/${chapterId}`);
+    if (!res.ok) return {};
+    const data = await res.json();
+    const map = {};
+    for (const t of data.tafsirs ?? []) {
+      map[t.verse_key] = {
+        text: stripHtml(t.text ?? ""),
+        resource_name: t.resource_name ?? "Ibn Kathir",
+      };
+    }
+    return map;
+  } catch {
+    return {};
+  }
 }
 
 // ─── Chapter Card ─────────────────────────────────────────────────────────────
@@ -120,10 +139,9 @@ function ChapterCard({ chapter, dark, index, onClick }) {
 function VerseCard({ verse, dark, index }) {
   const [tafsirOpen, setTafsirOpen] = useState(false);
 
-  const translation  = verse.translations?.[0]?.text ?? "";
-  const rawTafsir    = verse.tafsirs?.[0]?.text ?? "";
-  const tafsirText   = stripHtml(rawTafsir);
-  const scholarName  = verse.tafsirs?.[0]?.resource_name ?? "Ibn Kathir";
+  const translation = verse.translations?.[0]?.text ?? "";
+  const tafsirText  = verse.tafsirData?.text ?? "";
+  const scholarName = verse.tafsirData?.resource_name ?? "Ibn Kathir";
 
   return (
     <div
@@ -195,7 +213,7 @@ function VerseCard({ verse, dark, index }) {
           <div className="w-full flex justify-end pt-1">
             <button
               onClick={() => setTafsirOpen((o) => !o)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold flex-shrink-0 transition-all duration-200"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold flex-shrink-0 transition-all duration-200 cursor-pointer"
               style={
                 tafsirOpen
                   ? {
@@ -341,39 +359,73 @@ function SignInModal({ dark, onClose, onGoogleSignIn }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(6px)" }}
+      style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(8px)" }}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-2xl overflow-hidden"
+        className="w-full max-w-md rounded-3xl overflow-hidden relative"
         style={{
-          background: dark ? "rgba(12,22,18,0.98)" : "#ffffff",
-          border: dark ? "1px solid rgba(52,211,153,0.15)" : "1px solid rgba(6,95,70,0.1)",
-          boxShadow: dark ? "0 24px 64px rgba(0,0,0,0.7)" : "0 24px 64px rgba(6,95,70,0.15)",
+          background: dark ? "rgba(7,18,14,0.98)" : "#fafff8",
+          border: dark ? "1px solid rgba(52,211,153,0.18)" : "1px solid rgba(6,95,70,0.12)",
+          boxShadow: dark ? "0 32px 80px rgba(0,0,0,0.8)" : "0 32px 80px rgba(6,95,70,0.18)",
           animation: "cardRise 0.25s ease both",
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal header */}
+        {/* Islamic geometric watermark */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ opacity: dark ? 0.04 : 0.06 }}>
+          <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+            {[0,1,2,3].map(row => [0,1,2,3].map(col => {
+              const cx = col * 100 + 50, cy = row * 100 + 50, r = 38;
+              const pts = Array.from({length:8},(_,i)=>{
+                const a=(i*45-22.5)*Math.PI/180;
+                return `${cx+r*Math.cos(a)},${cy+r*Math.sin(a)}`;
+              }).join(' ');
+              return <polygon key={`${row}-${col}`} points={pts} fill="none" stroke="#065f46" strokeWidth="1.5"/>;
+            }))}
+          </svg>
+        </div>
+
+        {/* Top bar with Bismillah and close button */}
         <div
-          className="px-8 pt-8 pb-6 flex flex-col items-center text-center border-b"
-          style={{ borderColor: dark ? "rgba(55,65,81,0.35)" : "rgba(6,95,70,0.07)" }}
+          className="relative flex items-center justify-between px-6 pt-5 pb-4 border-b"
+          style={{ borderColor: dark ? "rgba(52,211,153,0.1)" : "rgba(6,95,70,0.07)" }}
         >
-          {/* Logo mark */}
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center mb-5"
-            style={{ background: "linear-gradient(135deg, #065f46, #047857)", boxShadow: "0 4px 16px rgba(6,95,70,0.35)" }}
+          <span
+            style={{ fontFamily: "'Scheherazade New', serif", fontSize: "1.1rem", color: dark ? "#6ee7b7" : "#065f46", letterSpacing: "0.05em" }}
           >
-            <span style={{ fontFamily: "'Scheherazade New', serif", fontSize: "14px", color: "#fde68a" }}>
+            بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+          </span>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-150 cursor-pointer"
+            style={{
+              background: dark ? "rgba(55,65,81,0.5)" : "rgba(6,95,70,0.07)",
+              color: dark ? "#9ca3af" : "#6b7280",
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="relative px-10 pt-8 pb-10 flex flex-col items-center text-center">
+          {/* Logo */}
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6"
+            style={{ background: "linear-gradient(135deg, #065f46 0%, #6ee7b7 100%)", boxShadow: "0 6px 20px rgba(6,95,70,0.4)" }}
+          >
+            <span style={{ fontFamily: "'Scheherazade New', serif", fontSize: "22px", color: "#fff", lineHeight: 1 }}>
               ﷽
             </span>
           </div>
 
           <h2
-            className="font-semibold mb-1"
+            className="mb-2"
             style={{
               fontFamily: "'Cormorant Garamond', serif",
-              fontSize: "1.5rem",
+              fontSize: "1.75rem",
+              fontWeight: 600,
               letterSpacing: "-0.02em",
               color: dark ? "#f1f5f9" : "#064e3b",
             }}
@@ -381,27 +433,24 @@ function SignInModal({ dark, onClose, onGoogleSignIn }) {
             Welcome back
           </h2>
           <p
-            className="text-sm leading-relaxed"
+            className="text-sm leading-relaxed mb-8 max-w-xs"
             style={{ fontFamily: "'Lora', serif", color: dark ? "#64748b" : "#78716c" }}
           >
-            Sign in to continue exploring the Quran
+            Sign in to continue your journey through the Quran
           </p>
-        </div>
 
-        {/* Sign-in options */}
-        <div className="px-8 py-6 flex flex-col gap-3">
+          {/* Google button */}
           <button
             onClick={onGoogleSignIn}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 hover:shadow-md active:scale-[0.98]"
+            className="w-full flex items-center justify-center gap-3 px-5 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 hover:shadow-lg active:scale-[0.98] cursor-pointer"
             style={{
-              background: dark ? "rgba(255,255,255,0.06)" : "#ffffff",
+              background: dark ? "rgba(255,255,255,0.07)" : "#ffffff",
               color: dark ? "#f1f5f9" : "#3c4043",
-              border: dark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #dadce0",
-              boxShadow: dark ? "none" : "0 1px 3px rgba(0,0,0,0.08)",
+              border: dark ? "1px solid rgba(255,255,255,0.14)" : "1px solid #dadce0",
+              boxShadow: dark ? "none" : "0 2px 6px rgba(0,0,0,0.08)",
             }}
           >
-            {/* Official Google "G" logo */}
-            <svg width="18" height="18" viewBox="0 0 48 48" className="flex-shrink-0">
+            <svg width="20" height="20" viewBox="0 0 48 48" className="flex-shrink-0">
               <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.1-4z"/>
               <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.1 18.9 12 24 12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4c-7.8 0-14.6 4.5-17.7 10.7z"/>
               <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.9 13.5-5l-6.2-5.2C29.5 35.6 26.9 36.5 24 36.5c-5.3 0-9.7-2.9-11.3-7l-6.6 5.1C9.5 39.6 16.3 44 24 44z"/>
@@ -410,10 +459,7 @@ function SignInModal({ dark, onClose, onGoogleSignIn }) {
             Continue with Google
           </button>
 
-          <p
-            className="text-center text-[11px] leading-relaxed pt-1"
-            style={{ color: dark ? "#374151" : "#9ca3af" }}
-          >
+          <p className="text-[11px] mt-4" style={{ color: dark ? "#1f2937" : "#cbd5e1" }}>
             By continuing, you agree to our terms of use.
           </p>
         </div>
@@ -474,8 +520,11 @@ export default function QuranSearch() {
     setVersesError(null);
     setVersesLoading(true);
     try {
-      const all = await fetchAllVerses(chapter.id);
-      setVerses(all);
+      const [all, tafsirMap] = await Promise.all([
+        fetchAllVerses(chapter.id),
+        fetchTafsirMap(chapter.id),
+      ]);
+      setVerses(all.map((v) => ({ ...v, tafsirData: tafsirMap[v.verse_key] ?? null })));
     } catch (err) {
       setVersesError(err.message);
     } finally {
@@ -640,11 +689,11 @@ export default function QuranSearch() {
               ) : (
                 <button
                   onClick={() => setSignInModalOpen(true)}
-                  className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200"
+                  className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer"
                   style={{
-                    background: "linear-gradient(135deg, #065f46, #047857)",
+                    background: "linear-gradient(135deg, #065f46 0%, #6ee7b7 100%)",
                     color: "#ffffff",
-                    boxShadow: "0 2px 8px rgba(6,95,70,0.25)",
+                    boxShadow: "0 2px 10px rgba(6,95,70,0.3)",
                   }}
                 >
                   Sign in
@@ -674,14 +723,13 @@ export default function QuranSearch() {
 
             <div className="w-full max-w-2xl">
               <div
-                className="w-full flex items-center gap-2 rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3"
+                className="w-full flex items-center gap-2 rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 transition-all duration-300 focus-within:ring-2 focus-within:ring-emerald-500/40"
                 style={{
                   background: dark ? "rgba(10,20,30,0.94)" : "rgba(255,255,255,0.97)",
-                  border: dark ? "1.5px solid rgba(52,211,153,0.15)" : "1.5px solid rgba(6,95,70,0.12)",
+                  border: dark ? "1.5px solid rgba(52,211,153,0.2)" : "1.5px solid rgba(6,95,70,0.15)",
                   boxShadow: dark
                     ? "0 4px 28px rgba(0,0,0,0.5)"
                     : "0 4px 28px rgba(6,95,70,0.07), 0 1px 3px rgba(0,0,0,0.04)",
-                  opacity: 0.7,
                 }}
               >
                 <Sparkles size={16} className="hidden sm:block flex-shrink-0" style={{ color: dark ? "#6ee7b7" : "#059669" }} />
@@ -689,12 +737,23 @@ export default function QuranSearch() {
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Semantic search coming soon — browse chapters below"
-                  className="flex-1 min-w-0 bg-transparent outline-none text-sm px-1 cursor-not-allowed"
-                  style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: dark ? "#64748b" : "#9ca3af" }}
-                  readOnly
+                  onKeyDown={(e) => e.key === "Enter" && query.trim() && null}
+                  placeholder="Describe a feeling, situation, or question…"
+                  className="flex-1 min-w-0 bg-transparent outline-none text-sm px-1 cursor-text"
+                  style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", color: dark ? "#f1f5f9" : "#1c1917" }}
                 />
-                <Search size={14} style={{ color: dark ? "#4b5563" : "#9ca3af", flexShrink: 0 }} />
+                <button
+                  disabled={!query.trim()}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer"
+                  style={
+                    query.trim()
+                      ? { background: "linear-gradient(135deg, #065f46, #047857)", color: "#fff", boxShadow: "0 2px 10px rgba(6,95,70,0.3)" }
+                      : { background: dark ? "rgba(31,41,55,0.55)" : "rgba(229,231,235,0.75)", color: dark ? "#6b7280" : "#9ca3af", cursor: "not-allowed" }
+                  }
+                >
+                  <Search size={13} />
+                  <span className="hidden sm:inline">Search</span>
+                </button>
               </div>
             </div>
           </div>

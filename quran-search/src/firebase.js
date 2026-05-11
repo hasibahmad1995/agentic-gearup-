@@ -1,8 +1,6 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, browserLocalPersistence, setPersistence } from "firebase/auth";
 
-// Replace these values with your Firebase project config
-// Get them from: https://console.firebase.google.com → your project → Project Settings → Your apps
 const firebaseConfig = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -12,6 +10,9 @@ const firebaseConfig = {
   appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+const app  = initializeApp(firebaseConfig);
+export const auth           = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Persist login across page refreshes and browser restarts
+setPersistence(auth, browserLocalPersistence);
