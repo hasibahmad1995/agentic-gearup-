@@ -360,7 +360,6 @@ function SignInModal({ dark, onClose, onGoogleSignIn }) {
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
       style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(8px)" }}
-      onClick={onClose}
     >
       <div
         className="w-full max-w-md rounded-3xl overflow-hidden relative"
@@ -370,7 +369,6 @@ function SignInModal({ dark, onClose, onGoogleSignIn }) {
           boxShadow: dark ? "0 32px 80px rgba(0,0,0,0.8)" : "0 32px 80px rgba(6,95,70,0.18)",
           animation: "cardRise 0.25s ease both",
         }}
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Islamic geometric watermark */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ opacity: dark ? 0.04 : 0.06 }}>
@@ -388,7 +386,7 @@ function SignInModal({ dark, onClose, onGoogleSignIn }) {
 
         {/* Top bar with Bismillah and close button */}
         <div
-          className="relative flex items-center justify-between px-6 pt-5 pb-4 border-b"
+          className="relative flex items-center justify-center px-6 pt-5 pb-4 border-b"
           style={{ borderColor: dark ? "rgba(52,211,153,0.1)" : "rgba(6,95,70,0.07)" }}
         >
           <span
@@ -398,11 +396,13 @@ function SignInModal({ dark, onClose, onGoogleSignIn }) {
           </span>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-150 cursor-pointer"
+            className="absolute right-6 w-7 h-7 rounded-full flex items-center justify-center transition-colors duration-150 cursor-pointer"
             style={{
               background: dark ? "rgba(55,65,81,0.5)" : "rgba(6,95,70,0.07)",
               color: dark ? "#9ca3af" : "#6b7280",
             }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(16,185,129,0.18)"; e.currentTarget.style.color = "#059669"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = dark ? "rgba(55,65,81,0.5)" : "rgba(6,95,70,0.07)"; e.currentTarget.style.color = dark ? "#9ca3af" : "#6b7280"; }}
           >
             ✕
           </button>
