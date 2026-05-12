@@ -9,7 +9,11 @@ import { useAuth } from "./AuthContext";
 
 const BASE           = "https://api.quran.com/api/v4";
 const TRANSLATION_ID = 20;  // Saheeh International
-const TAFSIR_ID      = 169; // Tafsir Ibn Kathir (English)
+
+const TAFSIR_SOURCES = [
+  { id: 169, name: "Ibn Kathir" },
+  { id: 168, name: "Ma'arif al-Qur'an" },
+];
 
 function stripHtml(html = "") {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -65,11 +69,11 @@ async function fetchAllVerses(chapterId) {
   return [...first.verses, ...rest.flat()];
 }
 
-async function fetchTafsirMap(chapterId) {
+async function fetchOneTafsirMap(chapterId, sourceId, sourceName) {
   try {
     const perPage = 50;
     const url = (page) =>
-      `${BASE}/tafsirs/${TAFSIR_ID}/by_chapter/${chapterId}` +
+      `${BASE}/tafsirs/${sourceId}/by_chapter/${chapterId}` +
       `?per_page=${perPage}&page=${page}`;
 
     const first = await fetch(url(1)).then((r) => r.json());
@@ -88,14 +92,26 @@ async function fetchTafsirMap(chapterId) {
     const map = {};
     for (const t of all) {
       if (t.verse_key && t.text) {
-        map[t.verse_key] = {
-          text: stripHtml(t.text),
-          resource_name: t.resource_name ?? "Ibn Kathir",
-        };
+        map[t.verse_key] = { text: stripHtml(t.text), name: sourceName };
       }
     }
     return map;
   } catch { return {}; }
+}
+
+async function fetchAllTafsirsMap(chapterId) {
+  const maps = await Promise.all(
+    TAFSIR_SOURCES.map(({ id, name }) => fetchOneTafsirMap(chapterId, id, name))
+  );
+  // Merge into verse_key → array of tafsir objects (only non-empty entries)
+  const combined = {};
+  for (const map of maps) {
+    for (const [verseKey, tafsir] of Object.entries(map)) {
+      if (!combined[verseKey]) combined[verseKey] = [];
+      combined[verseKey].push(tafsir);
+    }
+  }
+  return combined;
 }
 
 // ─── Chapter Card ─────────────────────────────────────────────────────────────
@@ -176,11 +192,12 @@ function ChapterCard({ chapter, dark, index, onClick }) {
 // ─── Verse Card ───────────────────────────────────────────────────────────────
 
 function VerseCard({ verse, dark, index }) {
-  const [tafsirOpen, setTafsirOpen] = useState(false);
+  const [openIdx, setOpenIdx] = useState(null);
 
   const translation = cleanTranslation(verse.translations?.[0]?.text ?? "");
-  const tafsirText  = verse.tafsirData?.text ?? "";
-  const scholarName = verse.tafsirData?.resource_name ?? "Ibn Kathir";
+  const tafsirs = verse.tafsirs ?? [];
+
+  const toggle = (i) => setOpenIdx((prev) => (prev === i ? null : i));
 
   return (
     <div
@@ -202,10 +219,7 @@ function VerseCard({ verse, dark, index }) {
       >
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-0.5 h-4 rounded-full flex-shrink-0" style={{ background: "#059669" }} />
-          <span
-            className="text-xs font-semibold tracking-wide truncate"
-            style={{ color: dark ? "#6ee7b7" : "#065f46" }}
-          >
+          <span className="text-xs font-semibold tracking-wide truncate" style={{ color: dark ? "#6ee7b7" : "#065f46" }}>
             {verse.verse_key}
           </span>
         </div>
@@ -230,10 +244,7 @@ function VerseCard({ verse, dark, index }) {
           {verse.text_uthmani}
         </p>
 
-        <div
-          className="w-full h-px"
-          style={{ background: dark ? "rgba(55,65,81,0.35)" : "rgba(6,95,70,0.07)" }}
-        />
+        <div className="w-full h-px" style={{ background: dark ? "rgba(55,65,81,0.35)" : "rgba(6,95,70,0.07)" }} />
 
         {/* Translation */}
         <div
@@ -248,55 +259,41 @@ function VerseCard({ verse, dark, index }) {
         >
           <p
             className="w-full text-sm leading-relaxed break-words"
-            style={{
-              fontFamily: '"Lora", Georgia, serif',
-              fontStyle: "italic",
-              color: dark ? "#bbf7d0" : "#14532d",
-            }}
+            style={{ fontFamily: '"Lora", Georgia, serif', fontStyle: "italic", color: dark ? "#bbf7d0" : "#14532d" }}
           >
             {translation}
           </p>
         </div>
 
-        {/* Tafsir toggle */}
-        {tafsirText && (
-          <div className="w-full flex justify-end pt-1">
-            <button
-              onClick={() => setTafsirOpen((o) => !o)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold flex-shrink-0 transition-all duration-200 cursor-pointer"
-              style={
-                tafsirOpen
-                  ? {
-                      background: "linear-gradient(135deg, #065f46, #047857)",
-                      color: "#ffffff",
-                      boxShadow: "0 2px 8px rgba(6,95,70,0.28)",
-                    }
-                  : {
-                      background: dark ? "rgba(16,185,129,0.09)" : "rgba(6,95,70,0.06)",
-                      color: dark ? "#6ee7b7" : "#065f46",
-                      border: dark ? "1px solid rgba(16,185,129,0.18)" : "1px solid rgba(6,95,70,0.14)",
-                    }
-              }
-            >
-              <BookOpen size={11} />
-              {tafsirOpen ? "Hide Tafsir" : "Read Tafsir"}
-              <ChevronDown
-                size={11}
-                style={{
-                  transform: tafsirOpen ? "rotate(180deg)" : "rotate(0deg)",
-                  transition: "transform 0.25s ease",
-                }}
-              />
-            </button>
+        {/* Tafsir buttons — one per scholar */}
+        {tafsirs.length > 0 && (
+          <div className="w-full flex flex-wrap gap-2 justify-end pt-1">
+            {tafsirs.map((tafsir, i) => (
+              <button
+                key={i}
+                onClick={() => toggle(i)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer"
+                style={
+                  openIdx === i
+                    ? { background: "linear-gradient(135deg, #065f46, #047857)", color: "#fff", boxShadow: "0 2px 8px rgba(6,95,70,0.28)" }
+                    : { background: dark ? "rgba(16,185,129,0.09)" : "rgba(6,95,70,0.06)", color: dark ? "#6ee7b7" : "#065f46", border: dark ? "1px solid rgba(16,185,129,0.18)" : "1px solid rgba(6,95,70,0.14)" }
+                }
+              >
+                <BookOpen size={11} />
+                {tafsir.name}
+                <ChevronDown size={11} style={{ transform: openIdx === i ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.25s ease" }} />
+              </button>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Tafsir Accordion */}
-      {tafsirText && (
+      {/* Tafsir Accordions — one per scholar */}
+      {tafsirs.map((tafsir, i) => (
         <div
+          key={i}
           className="w-full grid transition-all duration-300 ease-in-out"
-          style={{ gridTemplateRows: tafsirOpen ? "1fr" : "0fr" }}
+          style={{ gridTemplateRows: openIdx === i ? "1fr" : "0fr" }}
         >
           <div className="overflow-hidden min-w-0">
             <div
@@ -305,10 +302,7 @@ function VerseCard({ verse, dark, index }) {
             >
               <div className="flex flex-wrap items-center gap-2 pt-3 pb-2">
                 <ScrollText size={13} style={{ color: dark ? "#6ee7b7" : "#065f46", flexShrink: 0 }} />
-                <span
-                  className="text-[10px] font-bold tracking-[0.14em] uppercase"
-                  style={{ color: dark ? "#6ee7b7" : "#065f46" }}
-                >
+                <span className="text-[10px] font-bold tracking-[0.14em] uppercase" style={{ color: dark ? "#6ee7b7" : "#065f46" }}>
                   Tafsir
                 </span>
                 <span
@@ -319,10 +313,9 @@ function VerseCard({ verse, dark, index }) {
                     border: dark ? "1px solid rgba(16,185,129,0.14)" : "1px solid rgba(6,95,70,0.1)",
                   }}
                 >
-                  {scholarName}
+                  {tafsir.name}
                 </span>
               </div>
-
               <div
                 className="tafsir-scroll overflow-y-auto rounded-xl p-4 w-full"
                 style={{
@@ -331,14 +324,11 @@ function VerseCard({ verse, dark, index }) {
                   border: dark ? "1px solid rgba(52,211,153,0.1)" : "1px solid rgba(6,95,70,0.08)",
                 }}
               >
-                {tafsirText.split(/\n+/).filter(Boolean).map((para, i) => (
+                {tafsir.text.split(/\n+/).filter(Boolean).map((para, j) => (
                   <p
-                    key={i}
+                    key={j}
                     className="text-sm leading-[1.85] mb-3 last:mb-0 break-words"
-                    style={{
-                      fontFamily: '"Lora", Georgia, serif',
-                      color: dark ? "#94a3b8" : "#44403c",
-                    }}
+                    style={{ fontFamily: '"Lora", Georgia, serif', color: dark ? "#94a3b8" : "#44403c" }}
                   >
                     {para}
                   </p>
@@ -347,7 +337,7 @@ function VerseCard({ verse, dark, index }) {
             </div>
           </div>
         </div>
-      )}
+      ))}
     </div>
   );
 }
@@ -570,7 +560,7 @@ export default function QuranSearch() {
     setVersesError(null);
     setVersesLoading(true);
     try {
-      const cacheKey = `qs_v1_${chapter.id}`;
+      const cacheKey = `qs_v2_${chapter.id}`;
       const cached = readCache(cacheKey);
       if (cached) {
         setVerses(cached);
@@ -578,11 +568,11 @@ export default function QuranSearch() {
         return;
       }
 
-      const [all, tafsirMap] = await Promise.all([
+      const [all, tafsirsMap] = await Promise.all([
         fetchAllVerses(chapter.id),
-        fetchTafsirMap(chapter.id),
+        fetchAllTafsirsMap(chapter.id),
       ]);
-      const merged = all.map((v) => ({ ...v, tafsirData: tafsirMap[v.verse_key] ?? null }));
+      const merged = all.map((v) => ({ ...v, tafsirs: tafsirsMap[v.verse_key] ?? [] }));
       setVerses(merged);
       writeCache(cacheKey, merged);
     } catch (err) {
