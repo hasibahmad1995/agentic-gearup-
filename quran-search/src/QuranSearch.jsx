@@ -26,48 +26,76 @@ function cleanTranslation(text = "") {
   return /[.!?…]$/.test(cleaned) ? cleaned : cleaned.replace(/[,;]$/, "") + ".";
 }
 
+// ─── Cache helpers (24 h TTL) ─────────────────────────────────────────────────
+
+function readCache(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const { data, exp } = JSON.parse(raw);
+    if (Date.now() > exp) { localStorage.removeItem(key); return null; }
+    return data;
+  } catch { return null; }
+}
+
+function writeCache(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ data, exp: Date.now() + 86_400_000 }));
+  } catch {} // ignore quota errors silently
+}
+
+// ─── Fetchers ─────────────────────────────────────────────────────────────────
+
 async function fetchAllVerses(chapterId) {
-  const perPage = 50;
+  const perPage = 100;
   const url = (page) =>
     `${BASE}/verses/by_chapter/${chapterId}` +
-    `?translations=${TRANSLATION_ID}` +
-    `&fields=text_uthmani` +
+    `?translations=${TRANSLATION_ID}&fields=text_uthmani` +
     `&per_page=${perPage}&page=${page}`;
 
-  const firstData = await fetch(url(1)).then((r) => r.json());
-  const totalPages = firstData.pagination?.total_pages ?? 1;
-  let all = [...firstData.verses];
+  const first = await fetch(url(1)).then((r) => r.json());
+  const totalPages = first.pagination?.total_pages ?? 1;
+  if (totalPages === 1) return first.verses;
 
-  if (totalPages > 1) {
-    const rest = await Promise.all(
-      Array.from({ length: totalPages - 1 }, (_, i) =>
-        fetch(url(i + 2))
-          .then((r) => r.json())
-          .then((d) => d.verses)
-      )
-    );
-    for (const batch of rest) all = all.concat(batch);
-  }
-
-  return all;
+  const rest = await Promise.all(
+    Array.from({ length: totalPages - 1 }, (_, i) =>
+      fetch(url(i + 2)).then((r) => r.json()).then((d) => d.verses)
+    )
+  );
+  return [...first.verses, ...rest.flat()];
 }
 
 async function fetchTafsirMap(chapterId) {
   try {
-    const res = await fetch(`${BASE}/tafsirs/${TAFSIR_ID}/by_chapter/${chapterId}`);
-    if (!res.ok) return {};
-    const data = await res.json();
+    const perPage = 50;
+    const url = (page) =>
+      `${BASE}/tafsirs/${TAFSIR_ID}/by_chapter/${chapterId}` +
+      `?per_page=${perPage}&page=${page}`;
+
+    const first = await fetch(url(1)).then((r) => r.json());
+    const totalPages = first.pagination?.total_pages ?? 1;
+    let all = [...(first.tafsirs ?? [])];
+
+    if (totalPages > 1) {
+      const rest = await Promise.all(
+        Array.from({ length: totalPages - 1 }, (_, i) =>
+          fetch(url(i + 2)).then((r) => r.json()).then((d) => d.tafsirs ?? [])
+        )
+      );
+      all = [...all, ...rest.flat()];
+    }
+
     const map = {};
-    for (const t of data.tafsirs ?? []) {
-      map[t.verse_key] = {
-        text: stripHtml(t.text ?? ""),
-        resource_name: t.resource_name ?? "Ibn Kathir",
-      };
+    for (const t of all) {
+      if (t.verse_key && t.text) {
+        map[t.verse_key] = {
+          text: stripHtml(t.text),
+          resource_name: t.resource_name ?? "Ibn Kathir",
+        };
+      }
     }
     return map;
-  } catch {
-    return {};
-  }
+  } catch { return {}; }
 }
 
 // ─── Chapter Card ─────────────────────────────────────────────────────────────
@@ -542,11 +570,21 @@ export default function QuranSearch() {
     setVersesError(null);
     setVersesLoading(true);
     try {
+      const cacheKey = `qs_v1_${chapter.id}`;
+      const cached = readCache(cacheKey);
+      if (cached) {
+        setVerses(cached);
+        setVersesLoading(false);
+        return;
+      }
+
       const [all, tafsirMap] = await Promise.all([
         fetchAllVerses(chapter.id),
         fetchTafsirMap(chapter.id),
       ]);
-      setVerses(all.map((v) => ({ ...v, tafsirData: tafsirMap[v.verse_key] ?? null })));
+      const merged = all.map((v) => ({ ...v, tafsirData: tafsirMap[v.verse_key] ?? null }));
+      setVerses(merged);
+      writeCache(cacheKey, merged);
     } catch (err) {
       setVersesError(err.message);
     } finally {
