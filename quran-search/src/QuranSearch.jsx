@@ -266,6 +266,11 @@ function VerseCard({ verse, dark, index }) {
         </div>
 
         {/* Tafsir buttons — one per scholar */}
+        {tafsirs.length === 0 && (
+          <p className="text-[11px] text-right" style={{ color: dark ? "#374151" : "#9ca3af" }}>
+            Commentary for this verse is covered within an adjacent verse's tafsir.
+          </p>
+        )}
         {tafsirs.length > 0 && (
           <div className="w-full flex flex-wrap gap-2 justify-end pt-1">
             {tafsirs.map((tafsir, i) => (
