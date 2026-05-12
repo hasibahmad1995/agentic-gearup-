@@ -16,12 +16,14 @@ function stripHtml(html = "") {
 }
 
 function cleanTranslation(text = "") {
-  return stripHtml(text)
+  const cleaned = stripHtml(text)
     .replace(/\s+\d+\s+/g, " ")  // inline footnote numbers: "Lord 1 of" → "Lord of"
     .replace(/\s+\d+$/g, "")     // trailing footnote numbers: "Merciful. 1" → "Merciful."
     .replace(/\s+-\s*$/g, "")    // trailing dash: "worlds -" → "worlds"
     .replace(/\s+/g, " ")
     .trim();
+  // Normalize ending: comma/semicolon → period, no punctuation → period
+  return /[.!?…]$/.test(cleaned) ? cleaned : cleaned.replace(/[,;]$/, "") + ".";
 }
 
 async function fetchAllVerses(chapterId) {
